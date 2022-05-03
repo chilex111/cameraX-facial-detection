@@ -1,21 +1,25 @@
 package com.androchef.cameraxfacedetection
 
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.widget.Toast
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.androchef.cameraxfacedetection.camerax.CameraManager
+import com.androchef.cameraxfacedetection.listener.ResultListener
 import kotlinx.android.synthetic.main.activity_main.*
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : AppCompatActivity(), ResultListener {
 
     private lateinit var cameraManager: CameraManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+        CameraManager.cameraListener =this
         createCameraManager()
         checkForPermission()
         onClicks()
@@ -34,6 +38,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun onClicks() {
+
+        // Set up the listener for take photo button
+        camera_capture_button.setOnClickListener { cameraManager.takePhoto() }
         btnSwitch.setOnClickListener {
             cameraManager.changeCameraSelector()
         }
@@ -59,7 +66,8 @@ class MainActivity : AppCompatActivity() {
             this,
             previewView_finder,
             this,
-            graphicOverlay_finder
+            graphicOverlay_finder,
+            getString(R.string.app_name)
         )
     }
 
@@ -70,6 +78,13 @@ class MainActivity : AppCompatActivity() {
     companion object {
         private const val REQUEST_CODE_PERMISSIONS = 10
         private val REQUIRED_PERMISSIONS = arrayOf(android.Manifest.permission.CAMERA)
+    }
+
+    override fun cameraCaptureResult(value: Uri) {
+        val intent = Intent()
+        intent.putExtra(CameraManager.IMAGE_URI_SAVED,value.toString() )
+        setResult(RESULT_OK, intent)
+        finish()
     }
 
 }
