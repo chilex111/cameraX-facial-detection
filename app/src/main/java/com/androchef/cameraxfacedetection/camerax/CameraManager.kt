@@ -60,7 +60,7 @@ class CameraManager(
 
         val cameraProviderFuture = ProcessCameraProvider.getInstance(context)
         cameraProviderFuture.addListener(
-            {
+            Runnable{
                 cameraProvider = cameraProviderFuture.get()
                 preview = Preview.Builder()
                     .build()

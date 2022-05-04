@@ -3,11 +3,8 @@
   <component name="DesignSurface">
     <option name="filePathToZoomLevelMap">
       <map>
-        <entry key="app/src/main/res/drawable/ic_camera.xml" value="0.1595" />
-        <entry key="app/src/main/res/drawable/ic_flip_camera.xml" value="0.1595" />
-        <entry key="app/src/main/res/layout/activity_compare_image.xml" value="0.2359375" />
-        <entry key="app/src/main/res/layout/activity_main.xml" value="0.25" />
-        <entry key="app/src/main/res/menu/menu.xml" value="0.25" />
+        <entry key="app/src/main/res/layout/activity_compare_image.xml" value="0.25" />
+        <entry key="app/src/main/res/layout/activity_gallery_image.xml" value="0.25" />
       </map>
     </option>
   </component>

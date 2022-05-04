@@ -1,14 +1,14 @@
 package com.androchef.cameraxfacedetection
 
 import android.content.Intent
-import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Bundle
-import android.provider.MediaStore
+import android.util.Log
 import android.view.MenuItem
 import android.widget.ImageView
 import android.widget.PopupMenu
 import androidx.appcompat.app.AppCompatActivity
+import com.androchef.cameraxfacedetection.GalleryImageActivity.Companion.GALLERY_URI
 import com.androchef.cameraxfacedetection.camerax.CameraManager.Companion.IMAGE_URI_SAVED
 import kotlinx.android.synthetic.main.activity_compare_image.*
 
@@ -23,20 +23,22 @@ class CompareImageActivity : AppCompatActivity() {
 
         imageView1.setOnClickListener {
             imagePicked = PICK_IMAGE_1
-            showMenu(imageView1, PICK_IMAGE_1)
+            showMenu(imageView1)
         }
         imageView2.setOnClickListener {
             imagePicked = PICK_IMAGE_2
-            showMenu(imageView2, PICK_IMAGE_2)
+            showMenu(imageView2)
         }
     }
 
-    private fun showMenu(imageView: ImageView?, i: Int) {
+    private fun showMenu(imageView: ImageView?) {
         val popupMenu = PopupMenu(this, imageView)
         popupMenu.setOnMenuItemClickListener { menuItem: MenuItem ->
             when (menuItem.itemId) {
                 R.id.gallery -> {
-                    openGallery(i)
+                   // openGallery(i)
+                    val intent = Intent(this, GalleryImageActivity::class.java)
+                    startActivityForResult(intent, GALLERY_IMAGE)
                     return@setOnMenuItemClickListener true
                 }
                 R.id.camera -> {
@@ -52,11 +54,11 @@ class CompareImageActivity : AppCompatActivity() {
         popupMenu.show()
     }
 
-
+/*
     private fun openGallery(id: Int) {
         val gallery = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.INTERNAL_CONTENT_URI)
         startActivityForResult(gallery, id)
-    }
+    }*/
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
@@ -66,49 +68,30 @@ class CompareImageActivity : AppCompatActivity() {
                     val imageString = data.getStringExtra(IMAGE_URI_SAVED)
 
                     val imageUri = Uri.parse(imageString)
-                  //  var bitmap: Bitmap? = null
-                   // val contentResolver = contentResolver
+                    //  var bitmap: Bitmap? = null
+                    // val contentResolver = contentResolver
 
                     if (imagePicked != -1)
                         if (imagePicked == PICK_IMAGE_1) {
                             imageView1.setImageURI(imageUri)
-                            /*try {
-                                bitmap = if (Build.VERSION.SDK_INT < 28) {
-                                    MediaStore.Images.Media.getBitmap(contentResolver, imageUri)
-                                } else {
-                                    val source =
-                                        ImageDecoder.createSource(contentResolver, imageUri)
-                                    ImageDecoder.decodeBitmap(source)
-                                }
-                                imageView1.setImageBitmap(bitmap)
-                            } catch (e: Exception) {
-                                e.printStackTrace()
-                            }*/
+
                         } else if (imagePicked == PICK_IMAGE_2) {
                             imageView2.setImageURI(imageUri)
-                            /*       try {
-                                       bitmap = if (Build.VERSION.SDK_INT < 28) {
-                                           MediaStore.Images.Media.getBitmap(contentResolver, imageUri)
-                                       } else {
-                                           val source =
-                                               ImageDecoder.createSource(contentResolver, imageUri)
-                                           ImageDecoder.decodeBitmap(source)
-                                       }
-                                       imageView2.setImageBitmap(bitmap)
-                                   } catch (e: Exception) {
-                                       e.printStackTrace()
-                                   }*/
                         }
                 }
             } else {
-                val imageUri = data?.data
-
-                if (imagePicked != -1)
-                    if (imagePicked == PICK_IMAGE_1) {
-                        imageView1.setImageURI(imageUri)
-                    } else {
-                        imageView2.setImageURI(imageUri)
-                    }
+                if (data != null && data.hasExtra(GALLERY_URI)) {
+                    val imageString = data.getStringExtra(GALLERY_URI)
+                    val imageUri = Uri.parse(imageString)
+                    if (imagePicked != -1)
+                        if (imagePicked == PICK_IMAGE_1) {
+                            imageView1.setImageURI(imageUri)
+                        } else {
+                            imageView2.setImageURI(imageUri)
+                        }
+                }else{
+                    Log.e("COMPARE_ACTIVITY", "Eee No get anything")
+                }
             }
         }
     }
@@ -117,5 +100,6 @@ class CompareImageActivity : AppCompatActivity() {
         private const val PICK_IMAGE_1 = 1
         private const val PICK_IMAGE_2 = 2
         const val CAMERA_IMAGE = 3
+        const val GALLERY_IMAGE = 4
     }
 }
