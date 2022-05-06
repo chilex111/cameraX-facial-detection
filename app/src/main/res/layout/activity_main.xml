@@ -19,7 +19,8 @@
             android:id="@+id/previewView_finder"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            app:scaleType="fillCenter" />
+            app:scaleType="fillCenter"
+            />
 
         <com.androchef.cameraxfacedetection.camerax.GraphicOverlay
             android:id="@+id/graphicOverlay_finder"

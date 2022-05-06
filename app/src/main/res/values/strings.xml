@@ -1,4 +1,6 @@
 <resources>
     <string name="app_name">CameraXFaceDetection</string>
     <string name="switch_camera">Switch Camera</string>
+    <string name="similarity_null">Similarity: null</string>
+    <string name="similarity_result">Similarity: %1$s%%</string>
 </resources>

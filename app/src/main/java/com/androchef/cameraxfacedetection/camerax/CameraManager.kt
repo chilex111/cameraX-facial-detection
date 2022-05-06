@@ -3,6 +3,7 @@ package com.androchef.cameraxfacedetection.camerax
 import android.content.Context
 import android.net.Uri
 import android.util.Log
+import android.util.Size
 import android.widget.Toast
 import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
@@ -69,6 +70,7 @@ class CameraManager(
                     .build()
 
                 imageAnalyzer = ImageAnalysis.Builder()
+                    .setTargetResolution(Size( 480, 640 ))
                     .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                     .build()
                     .also {
