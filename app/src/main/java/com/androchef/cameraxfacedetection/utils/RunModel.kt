@@ -19,8 +19,8 @@ class RunModel ( private var model: FaceNetModel){
     //private val nameScoreHashmap = HashMap<String,ArrayList<Float>>()
 
     // Use any one of the two metrics, "cosine" or "l2"
-    //private val metricToBeUsed = "l2"
-    private val metricToBeUsed = "cosine"
+    private val metricToBeUsed = "l2"
+    //private val metricToBeUsed = "cosine"
 
     suspend fun runModel(bitmap1: Bitmap, bitmap2: Bitmap){
         var  similarFloat=0.0f
@@ -43,16 +43,16 @@ class RunModel ( private var model: FaceNetModel){
                         L2Norm( subject , subject2)
                     }
 
-                    similarity = if ( similarFloat > model.model.cosineThreshold ) {
-                        null
-                    } else{
-                        similarFloat.toString()
-                    }
-                    /* similarity = if ( similarFloat > model.model.l2Threshold ) {
+                 /*   similarity = if ( similarFloat > model.model.cosineThreshold ) {
                         null
                     } else{
                         similarFloat.toString()
                     }*/
+                     similarity = if ( similarFloat > model.model.l2Threshold ) {
+                        null
+                    } else{
+                        similarFloat.toString()
+                    }
                   Log.e( TAG ,"Average score for each user: $similarFloat")
                     Log.e( TAG ,"Average score for each user $similarFloat")
 

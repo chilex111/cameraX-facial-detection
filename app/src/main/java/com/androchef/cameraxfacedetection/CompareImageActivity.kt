@@ -18,6 +18,7 @@ import com.androchef.cameraxfacedetection.GalleryImageActivity.Companion.GALLERY
 import com.androchef.cameraxfacedetection.camerax.CameraManager.Companion.IMAGE_URI_SAVED
 import com.androchef.cameraxfacedetection.models.FaceNetModel
 import com.androchef.cameraxfacedetection.models.Models
+import com.androchef.cameraxfacedetection.utils.BitmapUtils.Companion.detectFace
 import com.androchef.cameraxfacedetection.utils.FileReader
 import com.androchef.cameraxfacedetection.utils.RunModel
 import kotlinx.android.synthetic.main.activity_compare_image.*
@@ -134,7 +135,7 @@ class CompareImageActivity : AppCompatActivity() {
                     val imageString = data.getStringExtra(IMAGE_URI_SAVED)
                     val imageUri = Uri.parse(imageString)
 
-                    val bitmap = when {
+                  /*  val bitmap = when {
                         Build.VERSION.SDK_INT < 28 -> MediaStore.Images.Media.getBitmap(
                             this.contentResolver,
                             imageUri
@@ -143,17 +144,19 @@ class CompareImageActivity : AppCompatActivity() {
                             val source = ImageDecoder.createSource(this.contentResolver, imageUri)
                             ImageDecoder.decodeBitmap(source)
                         }
-                    }
-
+                    }*/
+                    val bitmap = detectFace(imageUri)
                     if (imagePicked != -1)
                         if (imagePicked == PICK_IMAGE_1) {
                             bitmap1 = bitmap
-                            imageView1.setImageURI(imageUri)
+                            imageView1.setImageBitmap(bitmap)
+                          //  imageView1.setImageURI(imageUri)
 
                         } else if (imagePicked == PICK_IMAGE_2) {
                             bitmap2 = bitmap
+                            imageView2.setImageBitmap(bitmap)
 
-                            imageView2.setImageURI(imageUri)
+                           // imageView2.setImageURI(imageUri)
                         }
                 }
             } else {

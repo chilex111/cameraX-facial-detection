@@ -10,6 +10,7 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.androchef.cameraxfacedetection.camerax.CameraManager
 import com.androchef.cameraxfacedetection.listener.ResultListener
+import com.androchef.cameraxfacedetection.utils.BitmapUtils.Companion.detectFace
 import kotlinx.android.synthetic.main.activity_main.*
 
 class MainActivity : AppCompatActivity(), ResultListener {
