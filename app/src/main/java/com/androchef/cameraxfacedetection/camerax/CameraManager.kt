@@ -1,11 +1,13 @@
 package com.androchef.cameraxfacedetection.camerax
 
 import android.content.Context
+import android.graphics.*
 import android.net.Uri
 import android.util.Log
 import android.util.Size
 import android.widget.Toast
 import androidx.camera.core.*
+import androidx.camera.core.Camera
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.core.content.ContextCompat
@@ -124,7 +126,6 @@ class CameraManager(
      fun takePhoto() {
         // Get a stable reference of the modifiable image capture use case
         val imageCapture = imageCapture ?: return
-
         // Create time-stamped output file to hold the image
         val photoFile = File(
             outputDirectory,
