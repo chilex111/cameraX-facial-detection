@@ -197,16 +197,17 @@ class CompareImageActivity : AppCompatActivity() {
                     val imageUri = Uri.parse(imageString)
                     if (imagePicked != -1)
                         if (imagePicked == PICK_IMAGE_1) {
-                            bitmap1 =uriToBitmap(imageUri)
+                            bitmap1 = uriToBitmap(imageUri)
                             imageView1.setImageURI(imageUri)
                         } else {
-                            bitmap2 =uriToBitmap(imageUri)
+                            bitmap2 = uriToBitmap(imageUri)
                             imageView2.setImageURI(imageUri)
                         }
                 } else {
                     Log.e("COMPARE_ACTIVITY", "Eee No get anything")
                 }
             }
+            textViewLog.text = getString(R.string.similarity_null)
         }
 
     private var cameraLauncher =
@@ -220,18 +221,19 @@ class CompareImageActivity : AppCompatActivity() {
 
                     if (imagePicked != -1)
                         if (imagePicked == PICK_IMAGE_1) {
-                            bitmap1 =uriToBitmap(imageUri)
+                            bitmap1 = uriToBitmap(imageUri)
                             imageView1.setImageURI(imageUri)
 
                         } else if (imagePicked == PICK_IMAGE_2) {
-                            bitmap2 =uriToBitmap(imageUri)
+                            bitmap2 = uriToBitmap(imageUri)
                             imageView2.setImageURI(imageUri)
                         }
                 }
             }
+            textViewLog.text = getString(R.string.similarity_null)
         }
 
-    private fun uriToBitmap(imageUri:Uri):Bitmap{
+    private fun uriToBitmap(imageUri: Uri): Bitmap {
         val bitmap = when {
             Build.VERSION.SDK_INT < 28 -> MediaStore.Images.Media.getBitmap(
                 this.contentResolver,
@@ -242,8 +244,9 @@ class CompareImageActivity : AppCompatActivity() {
                 ImageDecoder.decodeBitmap(source)
             }
         }
-        return  bitmap
+        return bitmap
     }
+
     companion object {
         private const val PICK_IMAGE_1 = 1
         private const val PICK_IMAGE_2 = 2
