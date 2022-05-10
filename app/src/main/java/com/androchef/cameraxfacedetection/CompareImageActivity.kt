@@ -33,10 +33,12 @@ import java.nio.channels.FileChannel
 class CompareImageActivity : AppCompatActivity() {
     private var imagePicked = -1
 
+    private var bitmap1: Bitmap? = null
+    private var bitmap2: Bitmap? = null
     private lateinit var tfliteModel: MappedByteBuffer
     private lateinit var interpreter: Interpreter
     private var tImage: TensorImage = TensorImage()
-    private var tBuffer: TensorBuffer?= null
+    private var tBuffer: TensorBuffer? = null
 
     private var MODEL_PATH = "MobileFaceNet.tflite"
 
@@ -109,13 +111,13 @@ class CompareImageActivity : AppCompatActivity() {
         return fileChannel.map(FileChannel.MapMode.READ_ONLY, startOffset, declaredLength)
     }
 
-    private fun recognize( embedding1 : FloatArray, embedding2: FloatArray): String {
+    private fun recognize(embedding1: FloatArray, embedding2: FloatArray): String {
         return if (embedding1.isNotEmpty() || embedding2.isNotEmpty()) {
-           // val similarities = ArrayList<Float>()
+            // val similarities = ArrayList<Float>()
 
-           val maxVal =  cosineSimilarity(embedding1, embedding2)
+            val maxVal = cosineSimilarity(embedding1, embedding2)
 
-         //   val maxVal = similarities.maxOrNull()!!
+            //   val maxVal = similarities.maxOrNull()!!
             if (maxVal > 0.50) " ${(maxVal * 100).toString().take(2)}%"
             else "unknown:: ${(maxVal * 100).toString().take(2)}%"
         } else "unknown"
@@ -128,6 +130,7 @@ class CompareImageActivity : AppCompatActivity() {
 
         return tBuffer?.floatArray
     }
+
     private fun loadImage(bitmap: Bitmap): TensorImage {
         // Loads bitmap into a TensorImage
         tImage.load(bitmap)
@@ -138,6 +141,7 @@ class CompareImageActivity : AppCompatActivity() {
             .build()
         return imageProcessor.process(tImage)
     }
+
     private fun cosineSimilarity(A: FloatArray?, B: FloatArray?): Float {
         if (A == null || B == null || A.isEmpty() || B.isEmpty() || A.size != B.size) {
             return 2.0F
@@ -177,42 +181,48 @@ class CompareImageActivity : AppCompatActivity() {
         popupMenu.show()
     }
 
-    private var galleryLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-        if (result.resultCode == Activity.RESULT_OK) {
-            val data: Intent? = result.data
-            if (data != null && data.hasExtra(GALLERY_URI)) {
-                val imageString = data.getStringExtra(GALLERY_URI)
-                val imageUri = Uri.parse(imageString)
-                if (imagePicked != -1)
-                    if (imagePicked == PICK_IMAGE_1) {
-                        imageView1.setImageURI(imageUri)
-                    } else {
-                        imageView2.setImageURI(imageUri)
-                    }
-            }else{
-                Log.e("COMPARE_ACTIVITY", "Eee No get anything")
+    private var galleryLauncher =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            if (result.resultCode == Activity.RESULT_OK) {
+                val data: Intent? = result.data
+                if (data != null && data.hasExtra(GALLERY_URI)) {
+                    val imageString = data.getStringExtra(GALLERY_URI)
+                    val imageUri = Uri.parse(imageString)
+                    if (imagePicked != -1)
+                        if (imagePicked == PICK_IMAGE_1) {
+                            bitmap1 =
+                            imageView1.setImageURI(imageUri)
+                        } else {
+                            bitmap2 =
+                            imageView2.setImageURI(imageUri)
+                        }
+                } else {
+                    Log.e("COMPARE_ACTIVITY", "Eee No get anything")
+                }
             }
         }
-    }
 
-    private var cameraLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-        if (result.resultCode == Activity.RESULT_OK) {
-            val data: Intent? = result.data
-            if (data != null && data.hasExtra(IMAGE_URI_SAVED)) {
-                val imageString = data.getStringExtra(IMAGE_URI_SAVED)
+    private var cameraLauncher =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            if (result.resultCode == Activity.RESULT_OK) {
+                val data: Intent? = result.data
+                if (data != null && data.hasExtra(IMAGE_URI_SAVED)) {
+                    val imageString = data.getStringExtra(IMAGE_URI_SAVED)
 
-                val imageUri = Uri.parse(imageString)
+                    val imageUri = Uri.parse(imageString)
 
-                if (imagePicked != -1)
-                    if (imagePicked == PICK_IMAGE_1) {
-                        imageView1.setImageURI(imageUri)
+                    if (imagePicked != -1)
+                        if (imagePicked == PICK_IMAGE_1) {
+                            bitmap1 =
+                            imageView1.setImageURI(imageUri)
 
-                    } else if (imagePicked == PICK_IMAGE_2) {
-                        imageView2.setImageURI(imageUri)
-                    }
+                        } else if (imagePicked == PICK_IMAGE_2) {
+                            bitmap2 =
+                            imageView2.setImageURI(imageUri)
+                        }
+                }
             }
         }
-    }
 
     companion object {
         private const val PICK_IMAGE_1 = 1
