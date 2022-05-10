@@ -17,8 +17,9 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import com.androchef.cameraxfacedetection.GalleryImageActivity.Companion.GALLERY_URI
 import com.androchef.cameraxfacedetection.camerax.CameraManager.Companion.IMAGE_URI_SAVED
+import com.androchef.cameraxfacedetection.util.detectFace
 import kotlinx.android.synthetic.main.activity_compare_image.*
-import org.opencv.core.Scalar
+import org.opencv.android.OpenCVLoader
 import org.tensorflow.lite.DataType
 import org.tensorflow.lite.Interpreter
 import org.tensorflow.lite.gpu.GpuDelegate
@@ -31,6 +32,7 @@ import java.io.FileInputStream
 import java.io.IOException
 import java.nio.MappedByteBuffer
 import java.nio.channels.FileChannel
+import kotlin.math.sqrt
 
 
 class CompareImageActivity : AppCompatActivity() {
@@ -43,19 +45,27 @@ class CompareImageActivity : AppCompatActivity() {
     private var tImage: TensorImage = TensorImage()
     private var tBuffer: TensorBuffer? = null
 
-    private var MODEL_PATH = "MobileFaceNet.tflite"
+  //  private var MODEL_PATH = "MobileFacenet.tflite"
+    private var MODEL_PATH = "facenet.tflite"
 
     // Width of the image that our model expects
     var inputImageWidth = 112
 
     // Height of the image that our model expects
     var inputImageHeight = 112
-    private val IMAGE_MEAN = 127.5f
+    private val IMAGE_MEAN = 128.5f
     private val IMAGE_STD = 128f
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_compare_image)
+        if (OpenCVLoader.initDebug()) {
+            Log.d(TAG, "OpenCV is Configured or Connected Successfully")
+        } else {
+            Log.d(TAG, "OpenCV is not working or Loaded")
+        }
+        initializeModel()
+
         imageView1.layoutParams.height = 400
         imageView2.layoutParams.height = 400
 
@@ -69,16 +79,21 @@ class CompareImageActivity : AppCompatActivity() {
         }
 
         buttonMatch.setOnClickListener {
-            val embedding1 = bitmap1?.let { it1 -> getEmbedding(it1) }
-            val embedding2 = bitmap2?.let { it1 -> getEmbedding(it1) }
-            val res = recognize(embedding1, embedding2)
+            if (bitmap1 != null && bitmap2 != null) {
+                val img1 = bitmap1!!.copy(Bitmap.Config.ARGB_8888, true)
+                val img2 = bitmap2!!.copy(Bitmap.Config.ARGB_8888, true)
+                Log.e(TAG, "converted")
+                val embedding1 = getEmbedding(img1)
+                val embedding2 = getEmbedding(img2)
 
-            val scalar = if (res == "unknown") {
-                Scalar(255.0, 0.0, 0.0)
-            } else Scalar(0.0, 255.0, 0.0)
+                val res = recognize(embedding1, embedding2)
+                textViewLog.text = res
+                /*  val scalar = if (res == "unknown") {
+                      Scalar(255.0, 0.0, 0.0)
+                  } else Scalar(0.0, 255.0, 0.0)*/
 
+            }
         }
-        initializeModel()
     }
 
     private fun initializeModel() {
@@ -120,11 +135,10 @@ class CompareImageActivity : AppCompatActivity() {
     private fun recognize(embedding1: FloatArray?, embedding2: FloatArray?): String {
         if (embedding1 != null || embedding2 != null) {
             return if (embedding1!!.isNotEmpty() || embedding2!!.isNotEmpty()) {
-                // val similarities = ArrayList<Float>()
                 val maxVal = cosineSimilarity(embedding1, embedding2)
-                //   val maxVal = similarities.maxOrNull()!!
+                Log.e(TAG, maxVal.toString())
                 if (maxVal > 0.50) " ${(maxVal * 100).toString().take(2)}%"
-                else "unknown:: ${(maxVal * 100).toString().take(2)}%"
+                else "unknown:: ${(maxVal * 100)}%"
             } else "unknown"
         }
         return "unknown: 0%"
@@ -162,9 +176,11 @@ class CompareImageActivity : AppCompatActivity() {
             sumASq += (A[i] * A[i]).toDouble()
             sumBSq += (B[i] * B[i]).toDouble()
         }
-        return if (sumASq == 0.0 && sumBSq == 0.0) {
+        val sumTotal = if (sumASq == 0.0 && sumBSq == 0.0) {
             2.0F
-        } else (sumProduct / (Math.sqrt(sumASq) * Math.sqrt(sumBSq))).toFloat()
+        } else (sumProduct / (sqrt(sumASq) * sqrt(sumBSq))).toFloat()
+        Log.e(TAG, sumTotal.toString())
+        return sumTotal
     }
 
     private fun showMenu(imageView: ImageView?) {
@@ -218,15 +234,16 @@ class CompareImageActivity : AppCompatActivity() {
                     val imageString = data.getStringExtra(IMAGE_URI_SAVED)
 
                     val imageUri = Uri.parse(imageString)
+                    val bitmap = detectFace(imageUri)
 
                     if (imagePicked != -1)
                         if (imagePicked == PICK_IMAGE_1) {
-                            bitmap1 = uriToBitmap(imageUri)
-                            imageView1.setImageURI(imageUri)
+                            bitmap1 = bitmap//uriToBitmap(imageUri)
+                            imageView1.setImageBitmap(bitmap)//setImageURI(imageUri)
 
                         } else if (imagePicked == PICK_IMAGE_2) {
-                            bitmap2 = uriToBitmap(imageUri)
-                            imageView2.setImageURI(imageUri)
+                            bitmap2 = bitmap//uriToBitmap(imageUri)
+                            imageView2.setImageBitmap(bitmap)//setImageURI(imageUri)
                         }
                 }
             }
