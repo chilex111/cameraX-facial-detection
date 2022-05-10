@@ -4,8 +4,11 @@ import android.app.Activity
 import android.content.Intent
 import android.content.res.AssetFileDescriptor
 import android.graphics.Bitmap
+import android.graphics.ImageDecoder
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
+import android.provider.MediaStore
 import android.util.Log
 import android.view.MenuItem
 import android.widget.ImageView
@@ -66,7 +69,10 @@ class CompareImageActivity : AppCompatActivity() {
         }
 
         buttonMatch.setOnClickListener {
-            val res = getEmbedding(mBitmap!!)?.let { recognize(it) }
+            val embedding1 = bitmap1?.let { it1 -> getEmbedding(it1) }
+            val embedding2 = bitmap2?.let { it1 -> getEmbedding(it1) }
+            val res = recognize(embedding1, embedding2)
+
             val scalar = if (res == "unknown") {
                 Scalar(255.0, 0.0, 0.0)
             } else Scalar(0.0, 255.0, 0.0)
@@ -111,16 +117,17 @@ class CompareImageActivity : AppCompatActivity() {
         return fileChannel.map(FileChannel.MapMode.READ_ONLY, startOffset, declaredLength)
     }
 
-    private fun recognize(embedding1: FloatArray, embedding2: FloatArray): String {
-        return if (embedding1.isNotEmpty() || embedding2.isNotEmpty()) {
-            // val similarities = ArrayList<Float>()
-
-            val maxVal = cosineSimilarity(embedding1, embedding2)
-
-            //   val maxVal = similarities.maxOrNull()!!
-            if (maxVal > 0.50) " ${(maxVal * 100).toString().take(2)}%"
-            else "unknown:: ${(maxVal * 100).toString().take(2)}%"
-        } else "unknown"
+    private fun recognize(embedding1: FloatArray?, embedding2: FloatArray?): String {
+        if (embedding1 != null || embedding2 != null) {
+            return if (embedding1!!.isNotEmpty() || embedding2!!.isNotEmpty()) {
+                // val similarities = ArrayList<Float>()
+                val maxVal = cosineSimilarity(embedding1, embedding2)
+                //   val maxVal = similarities.maxOrNull()!!
+                if (maxVal > 0.50) " ${(maxVal * 100).toString().take(2)}%"
+                else "unknown:: ${(maxVal * 100).toString().take(2)}%"
+            } else "unknown"
+        }
+        return "unknown: 0%"
     }
 
     private fun getEmbedding(bitmap: Bitmap): FloatArray? {
@@ -190,10 +197,10 @@ class CompareImageActivity : AppCompatActivity() {
                     val imageUri = Uri.parse(imageString)
                     if (imagePicked != -1)
                         if (imagePicked == PICK_IMAGE_1) {
-                            bitmap1 =
+                            bitmap1 =uriToBitmap(imageUri)
                             imageView1.setImageURI(imageUri)
                         } else {
-                            bitmap2 =
+                            bitmap2 =uriToBitmap(imageUri)
                             imageView2.setImageURI(imageUri)
                         }
                 } else {
@@ -213,17 +220,30 @@ class CompareImageActivity : AppCompatActivity() {
 
                     if (imagePicked != -1)
                         if (imagePicked == PICK_IMAGE_1) {
-                            bitmap1 =
+                            bitmap1 =uriToBitmap(imageUri)
                             imageView1.setImageURI(imageUri)
 
                         } else if (imagePicked == PICK_IMAGE_2) {
-                            bitmap2 =
+                            bitmap2 =uriToBitmap(imageUri)
                             imageView2.setImageURI(imageUri)
                         }
                 }
             }
         }
 
+    private fun uriToBitmap(imageUri:Uri):Bitmap{
+        val bitmap = when {
+            Build.VERSION.SDK_INT < 28 -> MediaStore.Images.Media.getBitmap(
+                this.contentResolver,
+                imageUri
+            )
+            else -> {
+                val source = ImageDecoder.createSource(this.contentResolver, imageUri)
+                ImageDecoder.decodeBitmap(source)
+            }
+        }
+        return  bitmap
+    }
     companion object {
         private const val PICK_IMAGE_1 = 1
         private const val PICK_IMAGE_2 = 2
