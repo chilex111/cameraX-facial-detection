@@ -64,3 +64,5 @@ SOFTWARE.```
 
 
 https://github.com/happysingh23828/CameraX-FaceDetection-MlKit
+https://towardsdatascience.com/using-facenet-for-on-device-face-recognition-with-android-f84e36e19761
+https://towardsdatascience.com/understanding-cosine-similarity-and-its-application-fd42f585296a
