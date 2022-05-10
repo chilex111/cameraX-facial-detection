@@ -11,10 +11,17 @@ import androidx.appcompat.app.AppCompatActivity
 import com.androchef.cameraxfacedetection.GalleryImageActivity.Companion.GALLERY_URI
 import com.androchef.cameraxfacedetection.camerax.CameraManager.Companion.IMAGE_URI_SAVED
 import kotlinx.android.synthetic.main.activity_compare_image.*
+import java.nio.MappedByteBuffer
 
 
 class CompareImageActivity : AppCompatActivity() {
     private var imagePicked = -1
+
+    private lateinit var tfliteModel: MappedByteBuffer
+    private lateinit var interpreter: Interpreter
+    private var tImage: TensorImage = TensorImage()
+    private var tBuffer: TensorBuffer ?= null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_compare_image)
