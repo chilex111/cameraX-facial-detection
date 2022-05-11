@@ -16,6 +16,7 @@ package com.androchef.cameraxfacedetection.utils
 
 import android.content.ContentResolver
 import android.content.Context
+import android.database.Cursor
 import android.graphics.*
 import android.media.Image
 import android.net.Uri
@@ -215,6 +216,53 @@ class BitmapUtils {
                 thisFace.width.toInt(),
                 thisFace.height.toInt()
             )
+        }
+        fun Context.getRealPathFromUri( uri: Uri): String {
+            var picturePath=""
+            val filePathColumn = arrayOf(MediaStore.Files.FileColumns.DATA)
+            val cursor: Cursor? = contentResolver.query(
+                uri, filePathColumn,
+                null, null, null
+            )
+            if (cursor != null) {
+                cursor.moveToFirst()
+                val columnIndex: Int = cursor.getColumnIndex(filePathColumn[0])
+                picturePath = cursor.getString(columnIndex)
+                Log.e("", "picturePath : $picturePath")
+                cursor.close()
+            }
+            return picturePath
+        }
+         fun Context.getImageUri(inImage: Bitmap, imageUri: Uri): Uri? {
+            val bytes = ByteArrayOutputStream()
+            inImage.compress(Bitmap.CompressFormat.JPEG, 100, bytes)
+            val path = MediaStore.Images.Media.insertImage(
+                contentResolver,
+                inImage,
+                File(imageUri.path.toString()).name,
+                null
+            )
+            return Uri.parse(path)
+        }
+
+
+         fun Context.uriToBitmap(imageUri: Uri): Bitmap{
+            val imageBitmap = if (Build.VERSION.SDK_INT < 28) {
+                MediaStore.Images.Media.getBitmap(contentResolver, imageUri)
+            } else {
+                val source =
+                    ImageDecoder.createSource(contentResolver, imageUri)
+                ImageDecoder.decodeBitmap(source)
+            }
+            return imageBitmap
+        }
+
+        fun rotateImage(src: Bitmap, degree: Float = 90f): Bitmap? {
+            // create new matrix
+            val matrix = Matrix()
+            // setup rotation degree
+            matrix.postRotate(degree)
+            return Bitmap.createBitmap(src, 0, 0, src.width, src.height, matrix, true)
         }
     }
 
