@@ -1,2 +1,7 @@
 include ':app'
 rootProject.name = "CameraXFaceDetection"
+//def opencvsdk = 'Users/balogunabdulquddus/Downloads/OpenCV-android-sdk'
+
+include ':openCV455'
+//project(':OpenCV455').projectDir = new File(opencvsdk + '/sdk')
+

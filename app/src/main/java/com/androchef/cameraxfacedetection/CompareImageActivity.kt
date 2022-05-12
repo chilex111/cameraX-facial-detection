@@ -11,6 +11,7 @@ import androidx.appcompat.app.AppCompatActivity
 import com.androchef.cameraxfacedetection.GalleryImageActivity.Companion.GALLERY_URI
 import com.androchef.cameraxfacedetection.camerax.CameraManager.Companion.IMAGE_URI_SAVED
 import kotlinx.android.synthetic.main.activity_compare_image.*
+import org.opencv.android.OpenCVLoader
 
 
 class CompareImageActivity : AppCompatActivity() {
@@ -18,6 +19,13 @@ class CompareImageActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_compare_image)
+        //static {
+            if (OpenCVLoader.initDebug()){
+                Log.i(TAG, "opencv installed successfully");
+            }else{
+                Log.i(TAG, "opencv not installed");
+            }
+      //  }
         imageView1.layoutParams.height = 400
         imageView2.layoutParams.height = 400
 
@@ -101,5 +109,6 @@ class CompareImageActivity : AppCompatActivity() {
         private const val PICK_IMAGE_2 = 2
         const val CAMERA_IMAGE = 3
         const val GALLERY_IMAGE = 4
+        const val TAG = "COMPARE_ACTIVITY"
     }
 }

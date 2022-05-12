@@ -1,30 +1,39 @@
 package com.androchef.cameraxfacedetection
 
 import android.content.Intent
-import android.graphics.*
-import android.graphics.drawable.BitmapDrawable
+import android.graphics.Bitmap
 import android.net.Uri
-import android.os.Build
 import android.os.Bundle
 import android.provider.MediaStore
-import android.util.SparseArray
+import android.util.Log
 import android.widget.Toast
-import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-import com.google.android.gms.vision.Frame
-import com.google.android.gms.vision.face.Face
-import com.google.android.gms.vision.face.FaceDetector
 import kotlinx.android.synthetic.main.activity_gallery_image.*
+import org.opencv.android.Utils
+import org.opencv.core.*
+import org.opencv.imgcodecs.Imgcodecs
+import org.opencv.imgproc.Imgproc
+import org.opencv.objdetect.CascadeClassifier
 import java.io.ByteArrayOutputStream
 import java.io.File
+import java.io.FileOutputStream
+import java.io.IOException
 
 
 class GalleryImageActivity : AppCompatActivity() {
     private var tempBitmap: Bitmap? = null
     private var imageUri: Uri? = null
+
+    var faceDetector: CascadeClassifier? = null
+    lateinit var faceDir: File
+    var imageRatio = 0.0 // scale down ratio
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_gallery_image)
+
+       // System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
+        loadFaceLib()
         openGallery()
         buttonSave.setOnClickListener {
             if (tempBitmap != null) {
@@ -61,10 +70,12 @@ class GalleryImageActivity : AppCompatActivity() {
             imageUri = data?.data
 
             imageView.setImageURI(imageUri)
-            imageUri?.let { detectFace(it) }
+            //imageUri?.let { detectFace(it) }
+            val src = Imgcodecs.imread(imageUri?.path)
+            detectFaceOpenCV(src)
         }
     }
-
+/*
     private fun detectFace(imageUri: Uri) {
         val imageBitmap = if (Build.VERSION.SDK_INT < 28) {
             MediaStore.Images.Media.getBitmap(contentResolver, imageUri)
@@ -98,10 +109,87 @@ class GalleryImageActivity : AppCompatActivity() {
             canvas.drawRoundRect(RectF(x1, y1, x2, y2), 2f, 2f, paint)
         }
         imageView.setImageDrawable(BitmapDrawable(resources, tempBitmap))
-    }
+    }*/
+    private fun detectFaceOpenCV(src: Mat) {
 
+        // Detecting the face in the snap
+
+        // Detecting the face in the snap
+        val faceDetections = MatOfRect()
+        faceDetector?.detectMultiScale(src, faceDetections)
+        println(
+            String.format(
+                "Detected %s faces",
+                faceDetections.toArray().size
+            )
+        )
+
+        // Drawing boxes
+
+        // Drawing boxes
+        for (rect in faceDetections.toArray()) {
+            Imgproc.rectangle(
+               src,  // where to draw the box
+                Point(rect.x.toDouble(), rect.y.toDouble()),  // bottom left
+                Point(rect.x + rect.width.toDouble(), rect.y + rect.height.toDouble()),  // top right
+                Scalar(0.0, 0.0, 255.0),
+                3 // RGB colour
+            )
+           tempBitmap = convertMatToBitMap(src)
+            imageView.setImageBitmap(tempBitmap)
+
+        }
+    }
+    private fun loadFaceLib() {
+        try {
+            val modelInputStream =
+                resources.openRawResource(
+                    R.raw.haarcascade_frontalface_alt2)
+
+            // create a temp directory
+            faceDir = getDir(FACE_DIR, MODE_PRIVATE)
+
+            // create a model file
+            val faceModel = File(faceDir, FACE_MODEL)
+
+            if (!faceModel.exists()) { // copy model
+                // copy model to new face library
+                val modelOutputStream = FileOutputStream(faceModel)
+
+                val buffer = ByteArray(byteSize)
+                var byteRead = modelInputStream.read(buffer)
+                while (byteRead != -1) {
+                    modelOutputStream.write(buffer, 0, byteRead)
+                    byteRead = modelInputStream.read(buffer)
+                }
+
+                modelInputStream.close()
+                modelOutputStream.close()
+            }
+
+            faceDetector = CascadeClassifier(faceModel.absolutePath)
+        } catch (e: IOException) {
+            Log.e("Error ","loading cascade face model...$e")
+        }
+    }
+    private fun convertMatToBitMap(input: Mat): Bitmap? {
+        var bmp: Bitmap? = null
+        val rgb = Mat()
+        Imgproc.cvtColor(input, rgb, Imgproc.COLOR_BGR2RGB)
+        try {
+            bmp = Bitmap.createBitmap(rgb.cols(), rgb.rows(), Bitmap.Config.ARGB_8888)
+            Utils.matToBitmap(rgb, bmp)
+        } catch (e: CvException) {
+            Log.d("Exception", e.message!!)
+        }
+        return bmp
+    }
     companion object {
         private const val PICK_IMAGE = 1
         const val GALLERY_URI = "image_frm_gallery"
+        // Face model
+        private const val FACE_DIR = "facelib"
+        private const val FACE_MODEL = "haarcascade_frontalface_alt2.xml"
+        private const val byteSize = 4096 // buffer size
     }
 }
