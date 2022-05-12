@@ -235,6 +235,7 @@ class CompareImageActivity : AppCompatActivity() {
         return sumTotal
     }
 
+
     companion object {
         private const val PICK_IMAGE_1 = 1
         private const val PICK_IMAGE_2 = 2

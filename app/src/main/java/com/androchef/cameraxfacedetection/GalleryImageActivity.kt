@@ -10,6 +10,8 @@ import android.provider.MediaStore
 import android.util.Log
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import com.androchef.cameraxfacedetection.utils.OpenCvDetection
+import com.androchef.cameraxfacedetection.utils.getRealPathFromUri
 import kotlinx.android.synthetic.main.activity_gallery_image.*
 import org.opencv.android.Utils
 import org.opencv.core.*
@@ -26,16 +28,17 @@ class GalleryImageActivity : AppCompatActivity() {
     private var tempBitmap: Bitmap? = null
     private var imageUri: Uri? = null
 
-    var faceDetector: CascadeClassifier? = null
+    /*var faceDetector: CascadeClassifier? = null
     lateinit var faceDir: File
-    var imageRatio = 0.0 // scale down ratio
+    var imageRatio = 0.0 // scale down ratio*/
 
+    lateinit var openCvDetection: OpenCvDetection
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_gallery_image)
 
-//        System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
-        loadFaceLib()
+        openCvDetection = OpenCvDetection(this)
+        openCvDetection.loadFaceLib()
         openGallery()
         buttonSave.setOnClickListener {
             if (tempBitmap != null) {
@@ -75,26 +78,12 @@ class GalleryImageActivity : AppCompatActivity() {
             val realPath = imageUri?.let { getRealPathFromUri(it) }
             val src = Imgcodecs.imread(realPath)
             Log.e(TAG, realPath.toString())
-            detectFaceOpenCV(src)
+            tempBitmap = openCvDetection.detectFaceOpenCV(src)
+            imageView.setImageBitmap(tempBitmap)
         }
     }
 
-    private fun getRealPathFromUri(uri: Uri): String {
-        var picturePath = ""
-        val filePathColumn = arrayOf(MediaStore.Files.FileColumns.DATA)
-        val cursor: Cursor? = contentResolver.query(
-            uri, filePathColumn,
-            null, null, null
-        )
-        if (cursor != null) {
-            cursor.moveToFirst()
-            val columnIndex: Int = cursor.getColumnIndex(filePathColumn[0])
-            picturePath = cursor.getString(columnIndex)
-            Log.e("", "picturePath : $picturePath")
-            cursor.close()
-        }
-        return picturePath
-    }
+/*
 
     private fun detectFaceOpenCV(src: Mat) {
         // Detecting the face in the snap
@@ -181,15 +170,16 @@ class GalleryImageActivity : AppCompatActivity() {
         }
         return bmp
     }
+*/
 
     companion object {
         private const val PICK_IMAGE = 1
         const val GALLERY_URI = "image_frm_gallery"
 
-        // Face model
+       /* // Face model
         private const val FACE_DIR = "facelib"
         private const val FACE_MODEL = "haarcascade_frontalface_alt2.xml"
-        private const val byteSize = 4096 // buffer size
+        private const val byteSize = 4096 // buffer size*/
         private const val TAG = "GALEERY_IMAGE"
     }
 }
