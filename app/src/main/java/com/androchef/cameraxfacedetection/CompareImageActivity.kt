@@ -1,6 +1,7 @@
 package com.androchef.cameraxfacedetection
 
 import android.content.Intent
+import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Bundle
 import android.util.Log
@@ -12,10 +13,30 @@ import com.androchef.cameraxfacedetection.GalleryImageActivity.Companion.GALLERY
 import com.androchef.cameraxfacedetection.camerax.CameraManager.Companion.IMAGE_URI_SAVED
 import kotlinx.android.synthetic.main.activity_compare_image.*
 import org.opencv.android.OpenCVLoader
+import java.nio.MappedByteBuffer
 
 
 class CompareImageActivity : AppCompatActivity() {
     private var imagePicked = -1
+    private var bitmap1: Bitmap? = null
+    private var bitmap2: Bitmap? = null
+    private lateinit var tfliteModel: MappedByteBuffer
+    private lateinit var interpreter: Interpreter
+    private var tImage: TensorImage = TensorImage()
+    private var tBuffer: TensorBuffer? = null
+
+    private var MODEL_PATH = "MobileFacenet.tflite"
+// private var MODEL_PATH = "facenet.tflite"
+
+    // Width of the image that our model expects
+    var inputImageWidth = 112
+
+    // Height of the image that our model expects
+    var inputImageHeight = 112
+    private val IMAGE_MEAN = 128.5f
+    private val IMAGE_STD = 128f
+
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_compare_image)
@@ -36,6 +57,22 @@ class CompareImageActivity : AppCompatActivity() {
         imageView2.setOnClickListener {
             imagePicked = PICK_IMAGE_2
             showMenu(imageView2)
+        }
+        buttonMatch.setOnClickListener {
+            if (bitmap1 != null && bitmap2 != null) {
+                val img1 = bitmap1!!.copy(Bitmap.Config.ARGB_8888, true)
+                val img2 = bitmap2!!.copy(Bitmap.Config.ARGB_8888, true)
+                Log.e(TAG, "converted")
+                val embedding1 = getEmbedding(img1)
+                val embedding2 = getEmbedding(img2)
+
+                val res = recognize(embedding1, embedding2)
+                textViewLog.text = res
+                /*  val scalar = if (res == "unknown") {
+                      Scalar(255.0, 0.0, 0.0)
+                  } else Scalar(0.0, 255.0, 0.0)*/
+
+            }
         }
     }
 
