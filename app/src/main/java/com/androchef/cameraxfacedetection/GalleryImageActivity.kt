@@ -69,9 +69,10 @@ class GalleryImageActivity : AppCompatActivity() {
         if (resultCode == RESULT_OK) {
             imageUri = data?.data
 
-            imageView.setImageURI(imageUri)
+           // imageView.setImageURI(imageUri)
             //imageUri?.let { detectFace(it) }
             val src = Imgcodecs.imread(imageUri?.path)
+            Log.e(TAG, imageUri?.path.toString())
             detectFaceOpenCV(src)
         }
     }
@@ -191,5 +192,6 @@ class GalleryImageActivity : AppCompatActivity() {
         private const val FACE_DIR = "facelib"
         private const val FACE_MODEL = "haarcascade_frontalface_alt2.xml"
         private const val byteSize = 4096 // buffer size
+        private const val TAG = "GALEERY_IMAGE"
     }
 }
