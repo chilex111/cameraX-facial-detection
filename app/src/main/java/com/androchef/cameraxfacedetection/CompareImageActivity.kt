@@ -12,6 +12,7 @@ import android.widget.PopupMenu
 import androidx.appcompat.app.AppCompatActivity
 import com.androchef.cameraxfacedetection.GalleryImageActivity.Companion.GALLERY_URI
 import com.androchef.cameraxfacedetection.camerax.CameraManager.Companion.IMAGE_URI_SAVED
+import com.androchef.cameraxfacedetection.utils.uriToBitmap
 import kotlinx.android.synthetic.main.activity_compare_image.*
 import org.opencv.android.OpenCVLoader
 import org.tensorflow.lite.DataType
@@ -125,9 +126,13 @@ class CompareImageActivity : AppCompatActivity() {
 
                     if (imagePicked != -1)
                         if (imagePicked == PICK_IMAGE_1) {
+
+                            bitmap1 = uriToBitmap(imageUri)
                             imageView1.setImageURI(imageUri)
 
                         } else if (imagePicked == PICK_IMAGE_2) {
+
+                            bitmap2 = uriToBitmap(imageUri)
                             imageView2.setImageURI(imageUri)
                         }
                 }
@@ -137,8 +142,10 @@ class CompareImageActivity : AppCompatActivity() {
                     val imageUri = Uri.parse(imageString)
                     if (imagePicked != -1)
                         if (imagePicked == PICK_IMAGE_1) {
+                            bitmap1 = uriToBitmap(imageUri)
                             imageView1.setImageURI(imageUri)
                         } else {
+                            bitmap2 = uriToBitmap(imageUri)
                             imageView2.setImageURI(imageUri)
                         }
                 }else{
@@ -230,7 +237,7 @@ class CompareImageActivity : AppCompatActivity() {
         }
         val sumTotal = if (sumASq == 0.0 && sumBSq == 0.0) {
             2.0F
-        } else (sumProduct / (sqrt(sumASq) * sqrt(sumBSq))).toFloat()
+        } else (sumProduct / (Math.sqrt(sumASq) * Math.sqrt(sumBSq))).toFloat()
         Log.e(TAG, sumTotal.toString())
         return sumTotal
     }

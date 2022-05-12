@@ -2,7 +2,10 @@ package com.androchef.cameraxfacedetection.utils
 
 import android.content.Context
 import android.database.Cursor
+import android.graphics.Bitmap
+import android.graphics.ImageDecoder
 import android.net.Uri
+import android.os.Build
 import android.provider.MediaStore
 import android.util.Log
 
@@ -22,4 +25,18 @@ import android.util.Log
         cursor.close()
     }
     return picturePath
+}
+
+ fun Context.uriToBitmap(imageUri: Uri): Bitmap {
+    val bitmap = when {
+        Build.VERSION.SDK_INT < 28 -> MediaStore.Images.Media.getBitmap(
+            contentResolver,
+            imageUri
+        )
+        else -> {
+            val source = ImageDecoder.createSource(this.contentResolver, imageUri)
+            ImageDecoder.decodeBitmap(source)
+        }
+    }
+    return bitmap
 }
