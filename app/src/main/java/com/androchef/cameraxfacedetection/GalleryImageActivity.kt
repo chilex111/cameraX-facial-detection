@@ -1,6 +1,8 @@
 package com.androchef.cameraxfacedetection
 
+import android.content.Context
 import android.content.Intent
+import android.database.Cursor
 import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Bundle
@@ -32,7 +34,7 @@ class GalleryImageActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_gallery_image)
 
-       // System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
+//        System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
         loadFaceLib()
         openGallery()
         buttonSave.setOnClickListener {
@@ -71,10 +73,27 @@ class GalleryImageActivity : AppCompatActivity() {
 
            // imageView.setImageURI(imageUri)
             //imageUri?.let { detectFace(it) }
-            val src = Imgcodecs.imread(imageUri?.path)
-            Log.e(TAG, imageUri?.path.toString())
+            val realPath = imageUri?.let { getRealPathFromUri(it) }
+            val src = Imgcodecs.imread(realPath)
+            Log.e(TAG, realPath.toString())
             detectFaceOpenCV(src)
         }
+    }
+    fun Context.getRealPathFromUri(uri: Uri): String {
+        var picturePath=""
+        val filePathColumn = arrayOf(MediaStore.Files.FileColumns.DATA)
+        val cursor: Cursor? = contentResolver.query(
+            uri, filePathColumn,
+            null, null, null
+        )
+        if (cursor != null) {
+            cursor.moveToFirst()
+            val columnIndex: Int = cursor.getColumnIndex(filePathColumn[0])
+            picturePath = cursor.getString(columnIndex)
+            Log.e("", "picturePath : $picturePath")
+            cursor.close()
+        }
+        return picturePath
     }
 /*
     private fun detectFace(imageUri: Uri) {
@@ -134,12 +153,11 @@ class GalleryImageActivity : AppCompatActivity() {
                 Point(rect.x.toDouble(), rect.y.toDouble()),  // bottom left
                 Point(rect.x + rect.width.toDouble(), rect.y + rect.height.toDouble()),  // top right
                 Scalar(0.0, 0.0, 255.0),
-                3 // RGB colour
+                1 // RGB colour
             )
-           tempBitmap = convertMatToBitMap(src)
-            imageView.setImageBitmap(tempBitmap)
-
         }
+    tempBitmap = convertMatToBitMap(src)
+    imageView.setImageBitmap(tempBitmap)
     }
     private fun loadFaceLib() {
         try {
