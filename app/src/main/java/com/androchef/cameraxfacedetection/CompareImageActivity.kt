@@ -122,8 +122,6 @@ class CompareImageActivity : AppCompatActivity() {
                     val imageString = data.getStringExtra(IMAGE_URI_SAVED)
 
                     val imageUri = Uri.parse(imageString)
-                    //  var bitmap: Bitmap? = null
-                    // val contentResolver = contentResolver
 
                     if (imagePicked != -1)
                         if (imagePicked == PICK_IMAGE_1) {
