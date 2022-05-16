@@ -1,8 +1,6 @@
 package com.androchef.cameraxfacedetection
 
-import android.content.Context
 import android.content.Intent
-import android.database.Cursor
 import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Bundle
@@ -13,24 +11,14 @@ import androidx.appcompat.app.AppCompatActivity
 import com.androchef.cameraxfacedetection.utils.OpenCvDetection
 import com.androchef.cameraxfacedetection.utils.getRealPathFromUri
 import kotlinx.android.synthetic.main.activity_gallery_image.*
-import org.opencv.android.Utils
-import org.opencv.core.*
 import org.opencv.imgcodecs.Imgcodecs
-import org.opencv.imgproc.Imgproc
-import org.opencv.objdetect.CascadeClassifier
 import java.io.ByteArrayOutputStream
 import java.io.File
-import java.io.FileOutputStream
-import java.io.IOException
 
 
 class GalleryImageActivity : AppCompatActivity() {
     private var tempBitmap: Bitmap? = null
     private var imageUri: Uri? = null
-
-    /*var faceDetector: CascadeClassifier? = null
-    lateinit var faceDir: File
-    var imageRatio = 0.0 // scale down ratio*/
 
     lateinit var openCvDetection: OpenCvDetection
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -83,103 +71,10 @@ class GalleryImageActivity : AppCompatActivity() {
         }
     }
 
-/*
-
-    private fun detectFaceOpenCV(src: Mat) {
-        // Detecting the face in the snap
-        val faceDetections = MatOfRect()
-        faceDetector?.detectMultiScale(src, faceDetections)
-        println(
-            String.format(
-                "Detected %s faces",
-                faceDetections.toArray().size
-            )
-        )
-        // Drawing boxes
-        for (rect in faceDetections.toArray()) {
-            face = rect
-            Imgproc.rectangle(
-                src,  // where to draw the box
-                Point(rect.x.toDouble(), rect.y.toDouble()),  // bottom left
-                Point(
-                    rect.x + rect.width.toDouble(),
-                    rect.y + rect.height.toDouble()
-                ),  // top right
-                Scalar(0.0, 0.0, 255.0),
-                1 // RGB colour
-            )
-        }
-
-        val tempsBitmap = convertMatToBitMap(src)
-        if (tempsBitmap != null) {
-            tempBitmap = Bitmap.createBitmap(
-                tempsBitmap,
-                face.x,
-                face.y,
-                face.width,
-                face.height
-            )
-            imageView.setImageBitmap(tempBitmap)
-        }
-    }
-
-    private lateinit var face: Rect
-    private fun loadFaceLib() {
-        try {
-            val modelInputStream =
-                resources.openRawResource(
-                    R.raw.haarcascade_frontalface_alt2
-                )
-
-            // create a temp directory
-            faceDir = getDir(FACE_DIR, MODE_PRIVATE)
-
-            // create a model file
-            val faceModel = File(faceDir, FACE_MODEL)
-
-            if (!faceModel.exists()) { // copy model
-                // copy model to new face library
-                val modelOutputStream = FileOutputStream(faceModel)
-
-                val buffer = ByteArray(byteSize)
-                var byteRead = modelInputStream.read(buffer)
-                while (byteRead != -1) {
-                    modelOutputStream.write(buffer, 0, byteRead)
-                    byteRead = modelInputStream.read(buffer)
-                }
-
-                modelInputStream.close()
-                modelOutputStream.close()
-            }
-
-            faceDetector = CascadeClassifier(faceModel.absolutePath)
-        } catch (e: IOException) {
-            Log.e("Error ", "loading cascade face model...$e")
-        }
-    }
-
-    private fun convertMatToBitMap(input: Mat): Bitmap? {
-        var bmp: Bitmap? = null
-        val rgb = Mat()
-        Imgproc.cvtColor(input, rgb, Imgproc.COLOR_BGR2RGB)
-        try {
-            bmp = Bitmap.createBitmap(rgb.cols(), rgb.rows(), Bitmap.Config.ARGB_8888)
-            Utils.matToBitmap(rgb, bmp)
-        } catch (e: CvException) {
-            Log.d("Exception", e.message!!)
-        }
-        return bmp
-    }
-*/
-
     companion object {
         private const val PICK_IMAGE = 1
         const val GALLERY_URI = "image_frm_gallery"
 
-       /* // Face model
-        private const val FACE_DIR = "facelib"
-        private const val FACE_MODEL = "haarcascade_frontalface_alt2.xml"
-        private const val byteSize = 4096 // buffer size*/
         private const val TAG = "GALEERY_IMAGE"
     }
 }

@@ -22,40 +22,43 @@ class OpenCvDetection(private val context: Context) {
 
      fun detectFaceOpenCV(src: Mat):Bitmap? {
         // Detecting the face in the snap
-        val faceDetections = MatOfRect()
-        faceDetector?.detectMultiScale(src, faceDetections)
-        println(
-            String.format(
-                "Detected %s faces",
-                faceDetections.toArray().size
-            )
-        )
-        // Drawing boxes
-        for (rect in faceDetections.toArray()) {
-            face = rect
-            Imgproc.rectangle(
-                src,  // where to draw the box
-                Point(rect.x.toDouble(), rect.y.toDouble()),  // bottom left
-                Point(
-                    rect.x + rect.width.toDouble(),
-                    rect.y + rect.height.toDouble()
-                ),  // top right
-                Scalar(0.0, 0.0, 255.0),
-                1 // RGB colour
-            )
-        }
-
-        val tempsBitmap = convertMatToBitMap(src)
-        if (tempsBitmap != null) {
-            return Bitmap.createBitmap(
-                 tempsBitmap,
-                 face.x,
-                 face.y,
-                 face.width,
-                 face.height
+         try {
+             val faceDetections = MatOfRect()
+             faceDetector?.detectMultiScale(src, faceDetections)
+             println(
+                 String.format(
+                     "Detected %s faces",
+                     faceDetections.toArray().size
+                 )
              )
-        }
-        return null
+             // Drawing boxes
+             for (rect in faceDetections.toArray()) {
+                 face = rect
+                 Imgproc.rectangle(
+                     src,  // where to draw the box
+                     Point(rect.x.toDouble(), rect.y.toDouble()),  // bottom left
+                     Point(
+                         rect.x + rect.width.toDouble(),
+                         rect.y + rect.height.toDouble()
+                     ),  // top right
+                     Scalar(0.0, 0.0, 255.0),
+                     1 // RGB colour
+                 )
+             }
+
+             val tempsBitmap = convertMatToBitMap(src)
+             if (tempsBitmap != null ) {
+                 return Bitmap.createBitmap(
+                         tempsBitmap,
+                         face.x,
+                         face.y,
+                         face.width,
+                         face.height)
+             }
+         }catch (e: Exception){
+             Log.e("TRY_CATCH_ERROR", e.message.toString())
+         }
+         return null
     }
      fun convertMatToBitMap(input: Mat): Bitmap? {
         var bmp: Bitmap? = null

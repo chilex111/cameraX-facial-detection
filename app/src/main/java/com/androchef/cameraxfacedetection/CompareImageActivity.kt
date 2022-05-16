@@ -1,70 +1,109 @@
 package com.androchef.cameraxfacedetection
 
+import android.Manifest
 import android.content.Intent
-import android.content.res.AssetFileDescriptor
+import android.content.pm.PackageManager
 import android.graphics.Bitmap
+import android.graphics.ImageDecoder
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
+import android.provider.MediaStore
 import android.util.Log
 import android.view.MenuItem
 import android.widget.ImageView
 import android.widget.PopupMenu
+import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
+import com.androchef.cameraxfacedetection.CameraActivity.Companion.CAMERA_BITMAP
 import com.androchef.cameraxfacedetection.GalleryImageActivity.Companion.GALLERY_URI
-import com.androchef.cameraxfacedetection.camerax.CameraManager.Companion.IMAGE_URI_SAVED
-import com.androchef.cameraxfacedetection.utils.uriToBitmap
+import com.androchef.cameraxfacedetection.listener.BitmapListener
+import com.androchef.cameraxfacedetection.models.FaceNetModel
+import com.androchef.cameraxfacedetection.models.Models
+import com.androchef.cameraxfacedetection.utils.FileReader
+import com.androchef.cameraxfacedetection.utils.OpenCvDetection
+import com.androchef.cameraxfacedetection.utils.RunModel
 import kotlinx.android.synthetic.main.activity_compare_image.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import org.opencv.android.OpenCVLoader
-import org.tensorflow.lite.DataType
-import org.tensorflow.lite.Interpreter
-import org.tensorflow.lite.gpu.GpuDelegate
-import org.tensorflow.lite.support.common.ops.NormalizeOp
-import org.tensorflow.lite.support.image.ImageProcessor
-import org.tensorflow.lite.support.image.TensorImage
-import org.tensorflow.lite.support.image.ops.ResizeOp
-import org.tensorflow.lite.support.tensorbuffer.TensorBuffer
-import java.io.FileInputStream
-import java.io.IOException
-import java.nio.MappedByteBuffer
-import java.nio.channels.FileChannel
-import kotlin.math.sqrt
+import org.opencv.core.Mat
 
-
-class CompareImageActivity : AppCompatActivity() {
+class CompareImageActivity : AppCompatActivity(), BitmapListener {
     private var imagePicked = -1
     private var bitmap1: Bitmap? = null
     private var bitmap2: Bitmap? = null
-    private lateinit var tfliteModel: MappedByteBuffer
-    private lateinit var interpreter: Interpreter
-    private var tImage: TensorImage = TensorImage()
-    private var tBuffer: TensorBuffer? = null
+    private lateinit var faceNetModel: FaceNetModel
+    private lateinit var fileReader: FileReader
+    private lateinit var frameAnalyser: RunModel
 
-    private var MODEL_PATH = "MobileFacenet.tflite"
-// private var MODEL_PATH = "facenet.tflite"
+    lateinit var openCvDetection: OpenCvDetection
+// <----------------------- User controls --------------------------->
 
-    // Width of the image that our model expects
-    var inputImageWidth = 112
+    // Use the device's GPU to perform faster computations.
+// Refer https://www.tensorflow.org/lite/performance/gpu
+    private val useGpu = true
 
-    // Height of the image that our model expects
-    var inputImageHeight = 112
-    private val IMAGE_MEAN = 128.5f
-    private val IMAGE_STD = 128f
+    // Use XNNPack to accelerate inference.
+// Refer https://blog.tensorflow.org/2020/07/accelerating-tensorflow-lite-xnnpack-integration.html
+    private val useXNNPack = true
 
+    // You may the change the models here.
+// Use the model configs in Models.kt
+// Default is Models.FACENET ; Quantized models are faster
+    private val modelInfo = Models.FACENET
 
+    // <---------------------------------------------------------------->
+    private val REQUEST_EXTERNAL_STORAGE: Int = 1
+    private val PERMISSIONS_STORAGE = arrayOf<String>(
+        Manifest.permission.READ_EXTERNAL_STORAGE,
+        Manifest.permission.WRITE_EXTERNAL_STORAGE
+    )
+
+    /**
+     * Checks if the app has permission to write to device storage
+     *
+     * If the app does not has permission then the user will be prompted to grant permissions
+     *
+     * @param //activity
+     */
+    private fun verifyStoragePermissions() {
+        // Check if we have write permission
+        val permission = ActivityCompat.checkSelfPermission(
+            this,
+            Manifest.permission.WRITE_EXTERNAL_STORAGE
+        )
+        if (permission != PackageManager.PERMISSION_GRANTED) {
+            // We don't have permission so prompt the user
+            ActivityCompat.requestPermissions(
+                this,
+                PERMISSIONS_STORAGE,
+                REQUEST_EXTERNAL_STORAGE
+            )
+        }
+    }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        verifyStoragePermissions()
         setContentView(R.layout.activity_compare_image)
-        //static {
-            if (OpenCVLoader.initDebug()){
-                Log.i(TAG, "opencv installed successfully");
-            }else{
-                Log.i(TAG, "opencv not installed");
-            }
-      //  }
-        initializeModel()
 
+            if (OpenCVLoader.initDebug()){
+                Log.i(TAG, "opencv installed successfully")
+            }else{
+                Log.i(TAG, "opencv not installed")
+            }
+        openCvDetection = OpenCvDetection(this)
+        openCvDetection.loadFaceLib()
         imageView1.layoutParams.height = 400
         imageView2.layoutParams.height = 400
+
+        faceNetModel = FaceNetModel(this, modelInfo, useGpu, useXNNPack)
+        frameAnalyser = RunModel(faceNetModel)
+        fileReader = FileReader(faceNetModel)
+        logTextView = textViewLog
 
         imageView1.setOnClickListener {
             imagePicked = PICK_IMAGE_1
@@ -75,19 +114,17 @@ class CompareImageActivity : AppCompatActivity() {
             showMenu(imageView2)
         }
         buttonMatch.setOnClickListener {
-            if (bitmap1 != null && bitmap2 != null) {
-                val img1 = bitmap1!!.copy(Bitmap.Config.ARGB_8888, true)
-                val img2 = bitmap2!!.copy(Bitmap.Config.ARGB_8888, true)
-                Log.e(TAG, "converted")
-                val embedding1 = getEmbedding(img1)
-                val embedding2 = getEmbedding(img2)
 
-                val res = recognize(embedding1, embedding2)
-                textViewLog.text = res
-                /*  val scalar = if (res == "unknown") {
-                      Scalar(255.0, 0.0, 0.0)
-                  } else Scalar(0.0, 255.0, 0.0)*/
-
+            CoroutineScope(Dispatchers.Default).launch {
+                if (bitmap1 != null && bitmap2 != null)
+                    frameAnalyser.runModel(bitmap1!!, bitmap2!!)
+                else {
+                    Toast.makeText(
+                        this@CompareImageActivity,
+                        "You need 2 images for similarity check",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
             }
         }
     }
@@ -103,9 +140,12 @@ class CompareImageActivity : AppCompatActivity() {
                     return@setOnMenuItemClickListener true
                 }
                 R.id.camera -> {
-                    val intent = Intent(this, MainActivity::class.java)
-                    startActivityForResult(intent, CAMERA_IMAGE)
+                    /*val intent = Intent(this, MainActivity::class.java)
+                    startActivityForResult(intent, CAMERA_IMAGE)*/
                     // startFaceCaptureActivity(imageView)
+                    val intent = Intent(this, CameraActivity::class.java)
+                    startActivityForResult(intent, CAMERA_IMAGE)
+
                     return@setOnMenuItemClickListener true
                 }
                 else -> return@setOnMenuItemClickListener false
@@ -114,132 +154,65 @@ class CompareImageActivity : AppCompatActivity() {
         popupMenu.menuInflater.inflate(R.menu.menu, popupMenu.menu)
         popupMenu.show()
     }
-
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if (resultCode == RESULT_OK) {
             if (requestCode == CAMERA_IMAGE) {
-                if (data != null && data.hasExtra(IMAGE_URI_SAVED)) {
-                    val imageString = data.getStringExtra(IMAGE_URI_SAVED)
+                if (data != null && data.hasExtra(CAMERA_BITMAP)) {
+                    val imageString = data.getLongExtra(CAMERA_BITMAP, 0)
+                    /*val imageUri = Uri.parse(imageString)
+                    val realPath = imageUri?.let { getRealPathFromUri(it) }
+                    Log.e(TAG, realPath.toString())
 
-                    val imageUri = Uri.parse(imageString)
+                    val src = Imgcodecs.imread(realPath)
+               // Log.e(TAG, src.toString())
 
+                    val bitmap = openCvDetection.detectFaceOpenCV(src)*/
+
+                    val tempImg = Mat(imageString)
+                    val img = tempImg.clone()
+                    val bitmap = openCvDetection.convertMatToBitMap(img)
                     if (imagePicked != -1)
                         if (imagePicked == PICK_IMAGE_1) {
-
-                            bitmap1 = uriToBitmap(imageUri)
-                            imageView1.setImageURI(imageUri)
+                            bitmap1 = bitmap
+                            imageView1.setImageBitmap(bitmap)
 
                         } else if (imagePicked == PICK_IMAGE_2) {
-
-                            bitmap2 = uriToBitmap(imageUri)
-                            imageView2.setImageURI(imageUri)
+                            bitmap2 = bitmap
+                            imageView2.setImageBitmap(bitmap)
                         }
                 }
             } else {
                 if (data != null && data.hasExtra(GALLERY_URI)) {
                     val imageString = data.getStringExtra(GALLERY_URI)
                     val imageUri = Uri.parse(imageString)
+
+                    val bitmap = when {
+                        Build.VERSION.SDK_INT < 28 -> MediaStore.Images.Media.getBitmap(
+                            this.contentResolver,
+                            imageUri
+                        )
+                        else -> {
+                            val source = ImageDecoder.createSource(this.contentResolver, imageUri)
+                            ImageDecoder.decodeBitmap(source)
+                        }
+                    }
+
                     if (imagePicked != -1)
                         if (imagePicked == PICK_IMAGE_1) {
-                            bitmap1 = uriToBitmap(imageUri)
+                            bitmap1 = bitmap
                             imageView1.setImageURI(imageUri)
                         } else {
-                            bitmap2 = uriToBitmap(imageUri)
+                            bitmap2 = bitmap
+
                             imageView2.setImageURI(imageUri)
                         }
-                }else{
+                } else {
                     Log.e("COMPARE_ACTIVITY", "Eee No get anything")
                 }
             }
+            logTextView.text = getString(R.string.similarity_null)
         }
-    }
-
-    private fun initializeModel() {
-        try {
-            tfliteModel = loadModelFile()
-
-            val delegate = GpuDelegate(GpuDelegate.Options().setQuantizedModelsAllowed(true))
-            val options = (Interpreter.Options()).addDelegate(delegate)
-
-            @Suppress("DEPRECATION")
-            interpreter = Interpreter(tfliteModel, options)
-
-            val probabilityTensorIndex = 0
-            val probabilityShape =
-                interpreter.getOutputTensor(probabilityTensorIndex).shape() // {1, EMBEDDING_SIZE}
-            val probabilityDataType = interpreter.getOutputTensor(probabilityTensorIndex).dataType()
-
-            // Creates the input tensor
-            tImage = TensorImage(DataType.FLOAT32)
-
-            // Creates the output tensor and its processor
-            tBuffer = TensorBuffer.createFixedSize(probabilityShape, probabilityDataType)
-
-            Log.d(TAG, "Model loaded successful")
-        } catch (e: IOException) {
-            Log.e(TAG, "Error reading model", e)
-        }
-    }
-
-    private fun loadModelFile(): MappedByteBuffer {
-        val fileDescriptor: AssetFileDescriptor = assets.openFd(MODEL_PATH)
-        val inputStream = FileInputStream(fileDescriptor.fileDescriptor)
-        val fileChannel: FileChannel = inputStream.channel
-        val startOffset: Long = fileDescriptor.startOffset
-        val declaredLength: Long = fileDescriptor.declaredLength
-        return fileChannel.map(FileChannel.MapMode.READ_ONLY, startOffset, declaredLength)
-    }
-
-    private fun recognize(embedding1: FloatArray?, embedding2: FloatArray?): String {
-        if (embedding1 != null || embedding2 != null) {
-            return if (embedding1!!.isNotEmpty() || embedding2!!.isNotEmpty()) {
-                val maxVal = cosineSimilarity(embedding1, embedding2)
-                Log.e(TAG, maxVal.toString())
-                if (maxVal > 0.50) " ${(maxVal * 100).toString().take(2)}%"
-                else "unknown:: ${(maxVal * 100)}%"
-            } else "unknown"
-        }
-        return "unknown: 0%"
-    }
-
-    private fun getEmbedding(bitmap: Bitmap): FloatArray? {
-        tImage = loadImage(bitmap)
-
-        interpreter.run(tImage.buffer, tBuffer?.buffer?.rewind())
-
-        return tBuffer?.floatArray
-    }
-
-    private fun loadImage(bitmap: Bitmap): TensorImage {
-        // Loads bitmap into a TensorImage
-        tImage.load(bitmap)
-
-        val imageProcessor = ImageProcessor.Builder()
-            .add(ResizeOp(inputImageHeight, inputImageWidth, ResizeOp.ResizeMethod.BILINEAR))
-            .add(NormalizeOp(IMAGE_MEAN, IMAGE_STD))
-            .build()
-        return imageProcessor.process(tImage)
-    }
-
-    private fun cosineSimilarity(A: FloatArray?, B: FloatArray?): Float {
-        if (A == null || B == null || A.isEmpty() || B.isEmpty() || A.size != B.size) {
-            return 2.0F
-        }
-
-        var sumProduct = 0.0
-        var sumASq = 0.0
-        var sumBSq = 0.0
-        for (i in A.indices) {
-            sumProduct += (A[i] * B[i]).toDouble()
-            sumASq += (A[i] * A[i]).toDouble()
-            sumBSq += (B[i] * B[i]).toDouble()
-        }
-        val sumTotal = if (sumASq == 0.0 && sumBSq == 0.0) {
-            2.0F
-        } else (sumProduct / (Math.sqrt(sumASq) * Math.sqrt(sumBSq))).toFloat()
-        Log.e(TAG, sumTotal.toString())
-        return sumTotal
     }
 
 
@@ -249,5 +222,13 @@ class CompareImageActivity : AppCompatActivity() {
         const val CAMERA_IMAGE = 3
         const val GALLERY_IMAGE = 4
         const val TAG = "COMPARE_ACTIVITY"
+        lateinit var logTextView:TextView
+        fun setMessage(message: String) {
+            logTextView.text = message
+        }
+    }
+
+    override fun cameraCaptureBitmapResult(value: Bitmap) {
+
     }
 }
