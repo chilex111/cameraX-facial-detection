@@ -8,8 +8,8 @@ import android.provider.MediaStore
 import android.util.Log
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import com.androchef.cameraxfacedetection.utils.FileUtil
 import com.androchef.cameraxfacedetection.utils.OpenCvDetection
-import com.androchef.cameraxfacedetection.utils.getRealPathFromUri
 import kotlinx.android.synthetic.main.activity_gallery_image.*
 import org.opencv.imgcodecs.Imgcodecs
 import java.io.ByteArrayOutputStream
@@ -42,8 +42,13 @@ class GalleryImageActivity : AppCompatActivity() {
     }
 
     private fun openGallery() {
-        val gallery = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.INTERNAL_CONTENT_URI)
-        startActivityForResult(gallery, PICK_IMAGE)
+        val intent = Intent()
+        intent.type = "image/*"
+        intent.action = Intent.ACTION_GET_CONTENT
+        startActivityForResult(Intent.createChooser(intent, "Select Picture"), PICK_IMAGE)
+
+       // val gallery = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.INTERNAL_CONTENT_URI)
+        //startActivityForResult(gallery, PICK_IMAGE)
     }
 
     private fun getImageUri(inImage: Bitmap): Uri? {
@@ -62,10 +67,11 @@ class GalleryImageActivity : AppCompatActivity() {
         super.onActivityResult(requestCode, resultCode, data)
         if (resultCode == RESULT_OK) {
             imageUri = data?.data
-
-            val realPath = imageUri?.let { getRealPathFromUri(it) }
-            val src = Imgcodecs.imread(realPath)
-            Log.e(TAG, realPath.toString())
+            Log.e(TAG, imageUri.toString());
+            val file = FileUtil.getPath(imageUri, this)
+          //  val realPath = imageUri?.let { getRealPathFromUri(it) }
+            val src = Imgcodecs.imread(file)
+            Log.e(TAG, file.toString())
             tempBitmap = openCvDetection.detectFaceOpenCV(src)
             imageView.setImageBitmap(tempBitmap)
         }

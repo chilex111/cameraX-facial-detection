@@ -102,47 +102,8 @@ class CameraActivity : AppCompatActivity(), CameraBridgeViewBase.CvCameraViewLis
                   }
               }*/
     }
-    /*
-private fun orientation(){
-    val mOrientationEventListener =  object : OrientationEventListener(this) {
-        override fun onOrientationChanged(orientation: Int) {
-            // Monitors orientation values to determine the target rotation value
-            when (orientation) {
-                in 45..134 -> {
-                    rotation_tv.text = getString(R.string.n_270_degree)
-                }
-                in 135..224 -> {
-                    rotation_tv.text = getString(R.string.n_180_degree)
-                }
-                in 225..314 -> {
-                    rotation_tv.text = getString(R.string.n_90_degree)
-                }
-                else -> {
-                    rotation_tv.text = getString(R.string.n_0_degree)
-                }
-            }
 
-        }
-    }
-    if (mOrientationEventListener.canDetectOrientation()) {
-        mOrientationEventListener.enable();
-    } else {
-        mOrientationEventListener.disable();
-    }
-}*/
     /*
-    private fun getImageUri(inImage: Bitmap): Uri? {
-        val bytes = ByteArrayOutputStream()
-        inImage.compress(Bitmap.CompressFormat.JPEG, 100, bytes)
-        val path = MediaStore.Images.Media.insertImage(
-            contentResolver,
-            inImage,
-            File(imageUri?.path.toString()).name,
-            null
-        )
-        return Uri.parse(path)
-    }
-
     private fun dispatchTakePictureIntent() {
         Intent(MediaStore.ACTION_IMAGE_CAPTURE).also { takePictureIntent ->
             // Ensure that there's a camera activity to handle the intent
